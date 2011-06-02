@@ -1,0 +1,138 @@
+#!/bin/sh    
+                                                     
+#
+# Overrides post-receive hook in your git repository.
+#   
+# First this script should determine the path to your remote origin git repository
+# RVM path and rvm ruby string if you use it.  If it can't determine
+# path to the repository it will launch a manual mode where you'll have to 
+# enter these settings. You can also run 'pushdeploy_install_hook -m' to 
+# enter this mode.          
+#
+# Then this script writes to /you_repository_path/hooks/post-recieve  
+# This hook is launched when you completed 'git push'.
+#
+# Hook should switch to the right  RVM environment (if you use it) 
+# and run 'git pull' in your project directory. Then hook will run 
+# after_deploy.rb script in the config dir of project directory
+# which lauches bundler, migrate and other commands that you specified.
+#                                             
+
+repository=$(git config --get remote.origin.url)
+
+get_rvm_string()
+{
+  if [[ -n "$rvm_path" ]];
+  then
+    rvm_string=$(rvm current)
+  fi
+}
+
+manual_setup() 
+{
+  echo "Let's set up some variables"
+  if [ -z $repository ]; then
+     echo -e "\n\x1B[00;31m*** Can't locate your git repository. ***\x1B[00m"
+     echo -e "\nMay be you run installer from a wrong directory?"
+     echo -e "\nYou should run it from the root folder of your project. Something like /var/www/html/myapp/"
+     echo "Current dir is: $(pwd)"
+     echo -e "\n\x1B[00;32mAnyway, no worries, we can try to set everything up manually. Just answer some questions about your environment.\x1B[00m "
+  fi
+ 
+  echo -ne "Where is the git repository for this project located?: "
+  read repository 
+
+  get_rvm_string
+
+  if [ -n $rvm_path ]; then
+     echo -e "\n\x1B[00;32mRVM path found:\x1B[00m \x1B[00;34m$rvm_path\x1B[00m.\n"
+     echo -e "* hit Enter if this is a correct path."
+  else
+     echo -e "\nRVM path not found.\n"
+  fi
+
+  echo -e "* type \x1B[00;32mn\x1B[00m if you don't even use RVM."
+  echo -e "* or just enter your own path."
+  echo -ne "\nYour answer: "
+  read new_rvm_path
+
+  if [ -n "$new_rvm_path" ]; then  
+     if [ "$new_rvm_path" == "n" ]; then
+ 	 rvm_path=""
+     else
+     	 rvm_path=$new_rvm_path
+     fi
+  fi
+ 
+  if [ "$new_rvm_path" != "n" -a -n "$rvm_path" ]; then
+         echo -e "\n***************************************************************************\n"   
+
+      if [ -n $rvm_string ]; then
+	 echo -e "This is your active gemset and version of Ruby: \x1B[00;34m$rvm_string\x1B[00m."
+         echo -e "\n* Just hit Enter if this is correct for your project."
+      else
+         echo "Your rvm ruby string is not detected for some reason."
+      fi
+      echo -ne "\nEnter a rvm ruby string (usually something like 1.9.2@rails3): "
+      read rvm_string
+  fi
+  
+  echo $repository
+  echo $rvm_path
+  echo $rvm_string
+
+}
+
+generate_hook_body()
+{
+	cat <<-EOF
+	#!/bin/sh
+	deploy_dir=$(pwd)
+	read oldrev newrev refname
+
+	unset GIT_DIR && cd \$deploy_dir && git --work-tree=\$deploy_dir pull $repository -f
+	EOF
+
+	if [ -n "$rvm_path" -a -n "$rvm_string" ]; then
+		cat <<-EOF
+		source "$rvm_path/scripts/rvm"
+		rvm $rvm_string
+		EOF
+	fi
+
+	cat <<-EOF
+	\$deploy_dir/config/auto_deploy.rb \$oldrev \$newrev \$refname \$deploy_dir
+	EOF
+
+}
+
+if [ -z "$repository" -o "$1" == "-m" ]; then
+   manual_setup
+else
+   get_rvm_string
+fi
+
+# create 'hooks' folder if it doesn't exist
+
+if [ -z "$repository/hooks" ]; then
+    echo "Creating a hook folder (didn't exist).."
+    mkdir -p "$repository/hooks"
+fi
+
+# check if we have permissions to write to the 'hooks' folder
+
+if [ ! -w "$repository/hooks" ]; then
+  echo -e "\x1B[00;31mYou don't have permission to modify $repository/hooks/\x1B[00m"
+  echo "Try using: sudo $0"
+  exit 1
+fi
+
+generate_hook_body > $repository/hooks/post-receive
+if [ "$?" -ne 0 ]; then echo "A error occured while trying to write a hook."; exit 1; fi 
+
+chmod 770 $repository/hooks/post-receive
+if [ "$?" -ne 0 ]; then echo "A error occured while trying to set permission of the hook. Try sudo?"; exit 1; fi    
+
+echo -e "\n\x1B[00;32mpost-receive hook has been successfully installed to $repository/hooks/post-receive\x1B[00m"
+echo "Don't forget to run 'pushdeploy_create_config' inside of your project directory"
+
