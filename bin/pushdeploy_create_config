@@ -17,7 +17,7 @@ config_file.write %{#!/usr/bin/env ruby
 # The general purpose of this script is to run bundler, migration and
 # other commands that you want to launch after deployment.
 #
-
+require 'rubygems'
 require 'pushdeploy'
 
 PushDeploy.new(ARGV) do
