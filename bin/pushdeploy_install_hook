@@ -18,13 +18,13 @@
 # which lauches bundler, migrate and other commands that you specified.
 #                                             
 
-repository=`git config --get remote.origin.url`
+repository = `git config --get remote.origin.url`.chomp
                               
 rvm_path = ENV['rvm_path']
-rvm_string = rvm_path.nil? ? nil : `rvm current`  
+rvm_string = rvm_path.nil? ? nil : `rvm current`.chomp
 current_path = `pwd`.chop
 
-if ! File.directory?(repository) || ARGV[0] == '-m'   
+if !File.directory?(repository) || ARGV[0] == '-m'   
     
   if ! File.directory?(repository)
      puts "\n\e[00;31m*** Can't locate your git repository. ***\e[00m"
