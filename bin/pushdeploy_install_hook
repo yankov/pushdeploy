@@ -90,7 +90,7 @@ unset GIT_DIR && cd \$deploy_dir && git --work-tree=\$deploy_dir pull #{reposito
 
 hook_file.write %{source "#{rvm_path}/scripts/rvm"\nrvm #{rvm_string}\n} if rvm_path && rvm_string
 
-hook_file.write "\$deploy_dir/config/after_deploy.rb \$oldrev \$newrev \$refname \$deploy_dir"
+hook_file.write "\$deploy_dir/config/after_deploy.rb \$deploy_dir \$oldrev \$newrev \$refname"
 
 `chmod 770 #{repository}/hooks/post-receive`
 

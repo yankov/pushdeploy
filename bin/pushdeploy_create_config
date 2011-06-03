@@ -23,7 +23,7 @@ require 'pushdeploy'
 PushDeploy.new(ARGV) do
     bundle   
     migrate   
-    run "touch ./tmp/restart.txt" 
+    run "touch \#{@deploy_to}/tmp/restart.txt" 
 end
 }
 
