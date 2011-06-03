@@ -23,7 +23,7 @@ require 'pushdeploy'
 PushDeploy.new(ARGV) do
     bundle   
     migrate   
-    run "touch #{@deploy_to}/tmp/restart.txt" 
+    run "touch ./tmp/restart.txt" 
 end
 }
 
@@ -32,3 +32,5 @@ puts "\e[00;32mConfig has been successfully created!\e[00m"
 puts "*************************************\n"
 
 puts "You can edit " + `pwd`.chop + "/config/after_deploy.rb to add commands that you want to run after deployment.\n\n"
+`chmod 755 $(pwd)/config/after_deploy.rb` 
+`git add $(pwd)/config/after_deploy.rb`
