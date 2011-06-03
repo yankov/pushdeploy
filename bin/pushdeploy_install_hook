@@ -1,4 +1,4 @@
-#!/bin/sh    
+#!/usr/bin/env ruby
                                                      
 #
 # Overrides post-receive hook in your git repository.
@@ -18,121 +18,87 @@
 # which lauches bundler, migrate and other commands that you specified.
 #                                             
 
-repository=$(git config --get remote.origin.url)
+repository=`git config --get remote.origin.url`
+                              
+rvm_path = ENV['rvm_path']
+rvm_string = rvm_path.nil? ? nil : `rvm current`  
+current_path = `pwd`.chop
 
-get_rvm_string()
-{
-  if [[ -n "$rvm_path" ]];
-  then
-    rvm_string=$(rvm current)
-  fi
-}
-
-manual_setup() 
-{
-  echo "Let's set up some variables"
-  if [ -z $repository ]; then
-     echo -e "\n\x1B[00;31m*** Can't locate your git repository. ***\x1B[00m"
-     echo -e "\nMay be you run installer from a wrong directory?"
-     echo -e "\nYou should run it from the root folder of your project. Something like /var/www/html/myapp/"
-     echo "Current dir is: $(pwd)"
-     echo -e "\n\x1B[00;32mAnyway, no worries, we can try to set everything up manually. Just answer some questions about your environment.\x1B[00m "
-  fi
+if ! File.directory?(repository) || ARGV[0] == '-m'   
+    
+  if ! File.directory?(repository)
+     puts "\n\e[00;31m*** Can't locate your git repository. ***\e[00m"
+     puts "\nMay be you run installer from a wrong directory?"
+     puts "\nYou should run it from the root folder of your project. Something like /var/www/html/myapp/"
+     puts "Current dir is: #{current_path}"
+     puts "\n\e[00;32mAnyway, no worries, we can try to set everything up manually. Just answer some questions about your environment.\e[00m "
+  end
  
-  echo -ne "Where is the git repository for this project located?: "
-  read repository 
+  print "\nWhere is the git repository for this project located?: "
+  repository = gets.chomp
 
-  get_rvm_string
-
-  if [ -n $rvm_path ]; then
-     echo -e "\n\x1B[00;32mRVM path found:\x1B[00m \x1B[00;34m$rvm_path\x1B[00m.\n"
-     echo -e "* hit Enter if this is a correct path."
+  if !rvm_path.nil? 
+     puts "\n\e[00;32mRVM path found:\e[00m \e[00;34m#{rvm_path}\e[00m.\n"
+     puts "* hit Enter if this is a correct path."
   else
-     echo -e "\nRVM path not found.\n"
-  fi
+     puts "\nRVM path not found.\n"
+  end
 
-  echo -e "* type \x1B[00;32mn\x1B[00m if you don't even use RVM."
-  echo -e "* or just enter your own path."
-  echo -ne "\nYour answer: "
-  read new_rvm_path
-
-  if [ -n "$new_rvm_path" ]; then  
-     if [ "$new_rvm_path" == "n" ]; then
- 	 rvm_path=""
-     else
-     	 rvm_path=$new_rvm_path
-     fi
-  fi
+  puts "* type \e[00;32mn\e[00m if you don't even use RVM."
+  puts "* or just enter your own path."
+  print  "\nYour answer: "
+  new_rvm_path = gets.chomp
+             
+  if new_rvm_path == 'n'
+     rvm_path = nil
+  elsif !new_rvm_path.empty?
+     rvm_path = new_rvm_path
+  end
+   
  
-  if [ "$new_rvm_path" != "n" -a -n "$rvm_path" ]; then
-         echo -e "\n***************************************************************************\n"   
+  if new_rvm_path != "n" && !rvm_path.nil? 
+         puts "\n***************************************************************************\n"   
 
-      if [ -n $rvm_string ]; then
-	 echo -e "This is your active gemset and version of Ruby: \x1B[00;34m$rvm_string\x1B[00m."
-         echo -e "\n* Just hit Enter if this is correct for your project."
+      if !rvm_string.nil?
+	       puts "This is your active gemset and version of Ruby: \e[00;34m#{rvm_string}\e[00m."
+         puts "\n* Just hit Enter if this is correct for your project."
       else
-         echo "Your rvm ruby string is not detected for some reason."
-      fi
-      echo -ne "\nEnter a rvm ruby string (usually something like 1.9.2@rails3): "
-      read rvm_string
-  fi
+         puts "Your rvm ruby string is not detected for some reason."
+      end
+      print  "\nEnter a rvm ruby string (usually something like 1.9.2@rails3): "
+     
+      new_rvm_string = gets.chomp   
+      rvm_string = new_rvm_string.empty? ? rvm_string : new_rvm_string
+      
+  end
   
-  echo $repository
-  echo $rvm_path
-  echo $rvm_string
+end  
 
+# create 'hooks' folder if it doesn't exist                  
+Dir.mkdir "#{repository}/hooks" if !File.directory? "#{repository}/hooks"
+                                         
+hook_file = File.open "#{repository}/hooks/post-receive", "w"
+puts "\e[00;31mA error has been occured while trying to write to #{repository}/hooks/post-receive. Not enough permission?\e[00m\n\n Try using: sudo\n" && exit if hook_file.nil?  
+                          
+# writing a bash script to a hook
+hook_file.write %{#!/bin/sh
+deploy_dir=#{current_path}
+read oldrev newrev refname
+
+unset GIT_DIR && cd \$deploy_dir && git --work-tree=\$deploy_dir pull #{repository} -f
 }
 
-generate_hook_body()
-{
-	cat <<-EOF
-	#!/bin/sh
-	deploy_dir=$(pwd)
-	read oldrev newrev refname
+hook_file.write %{source "#{rvm_path}/scripts/rvm"\nrvm #{rvm_string}} if rvm_path && rvm_string
 
-	unset GIT_DIR && cd \$deploy_dir && git --work-tree=\$deploy_dir pull $repository -f
-	EOF
+hook_file.write "\$deploy_dir/config/auto_deploy.rb \$oldrev \$newrev \$refname \$deploy_dir"
 
-	if [ -n "$rvm_path" -a -n "$rvm_string" ]; then
-		cat <<-EOF
-		source "$rvm_path/scripts/rvm"
-		rvm $rvm_string
-		EOF
-	fi
+`chmod 770 #{repository}/hooks/post-receive`
 
-	cat <<-EOF
-	\$deploy_dir/config/auto_deploy.rb \$oldrev \$newrev \$refname \$deploy_dir
-	EOF
+puts "A error occured while trying to set permission of the hook. Try sudo?" && exit if !$?.success?
 
-}
+puts "\n*****************************************************************"
+puts "\e[00;32mpost-receive hook has been successfully installed to #{repository}/hooks/post-receive\e[00m"
+puts "*******************************************************************\n"
 
-if [ -z "$repository" -o "$1" == "-m" ]; then
-   manual_setup
-else
-   get_rvm_string
-fi
-
-# create 'hooks' folder if it doesn't exist
-
-if [ -z "$repository/hooks" ]; then
-    echo "Creating a hook folder (didn't exist).."
-    mkdir -p "$repository/hooks"
-fi
-
-# check if we have permissions to write to the 'hooks' folder
-
-if [ ! -w "$repository/hooks" ]; then
-  echo -e "\x1B[00;31mYou don't have permission to modify $repository/hooks/\x1B[00m"
-  echo "Try using: sudo $0"
-  exit 1
-fi
-
-generate_hook_body > $repository/hooks/post-receive
-if [ "$?" -ne 0 ]; then echo "A error occured while trying to write a hook."; exit 1; fi 
-
-chmod 770 $repository/hooks/post-receive
-if [ "$?" -ne 0 ]; then echo "A error occured while trying to set permission of the hook. Try sudo?"; exit 1; fi    
-
-echo -e "\n\x1B[00;32mpost-receive hook has been successfully installed to $repository/hooks/post-receive\x1B[00m"
-echo "Don't forget to run 'pushdeploy_create_config' inside of your project directory"
+puts "Don't forget to run 'pushdeploy_create_config' inside of your project directory on a development machine.\n\n"
 

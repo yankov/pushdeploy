@@ -1,40 +1,34 @@
-#!/bin/bash
+#!/usr/bin/env ruby
 
 #
 # This script creates a file 'after_deploy.rb' in your config directory.   
 # You should run it inside of your project directory.
 #                                                      
 
-generate_config_body()
-{
-	cat <<-EOF
-	#!/usr/bin/env ruby
-	
-	#
-	# This script is launched by post-receive hook when push is completed.
-	# The general purpose of this script is to run bundler, migration and
-	# other commands that you want to launch after deployment.
-	#
-	
-	require 'pushdeploy'
+Dir.mkdir "./config" if !File.directory? './config'
+                                                    
+config_file = File.open "./config/after_deploy.rb", "w"
+raise "A error has been occured while trying to write to $(pwd)/config/after_deploy.rb. Not enough permission?" if config_file.nil?  
 
-	PushDeploy.new(ARGV) do
-	    bundle   
-	    migrate   
-	    run "touch #{@deploy_to}/tmp/restart.txt" 
-	end
-	EOF
+config_file.write %{#!/usr/bin/env ruby
 
+#
+# This script is launched by post-receive hook when push is completed.
+# The general purpose of this script is to run bundler, migration and
+# other commands that you want to launch after deployment.
+#
+
+require 'pushdeploy'
+
+PushDeploy.new(ARGV) do
+    bundle   
+    migrate   
+    run "touch #{@deploy_to}/tmp/restart.txt" 
+end
 }
 
-if [ ! -d "./config" ]; then mkdir config; fi	
+puts "\n*************************************"
+puts "\e[00;32mConfig has been successfully created!\e[00m"
+puts "*************************************\n"
 
-generate_config_body > ./config/after_deploy.rb	
-
-if [ -f "./config/after_deploy.rb" ]; then 
-	echo -e "\n**********************************"
-	echo -e "\n\x1B[00;32mConfig has been successfully created!\x1B[00m\n"
-	echo -e "You can edit $(pwd)/config/after_deploy.rb to add commands that you want to run after deployment.\n"
-else
-	echo -e "\n\x1B[00;31mAn error has been occured while trying to write to $(pwd)/config/after_deploy.rb. Not enough permission?\e[00m"
-fi
+puts "You can edit " + `pwd`.chop + "/config/after_deploy.rb to add commands that you want to run after deployment.\n\n"
