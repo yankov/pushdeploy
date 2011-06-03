@@ -88,7 +88,7 @@ read oldrev newrev refname
 unset GIT_DIR && cd \$deploy_dir && git --work-tree=\$deploy_dir pull #{repository} -f
 }
 
-hook_file.write %{source "#{rvm_path}/scripts/rvm"\nrvm #{rvm_string}} if rvm_path && rvm_string
+hook_file.write %{source "#{rvm_path}/scripts/rvm"\nrvm #{rvm_string}\n} if rvm_path && rvm_string
 
 hook_file.write "\$deploy_dir/config/after_deploy.rb \$oldrev \$newrev \$refname \$deploy_dir"
 
