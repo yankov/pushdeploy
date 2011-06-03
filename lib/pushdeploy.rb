@@ -48,12 +48,11 @@ class PushDeploy
       schema = %x{git diff --name-status #{@oldrev} #{@newrev} -- db/schema.rb}
       if schema =~ /^A/
         run "bundle exec rake db:create"
-      end
-                      
+      end 
+      
       if `git diff HEAD^`.index("db/migrate")
        puts "Migrating.."
        run 'bundle exec rake db:migrate RAILS_ENV="production"'
-      end    
-    end                                
-                                               
-end                                          
+      end
+    end
+end

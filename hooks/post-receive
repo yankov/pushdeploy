@@ -1,0 +1,8 @@
+#!/bin/sh
+deploy_dir=/Users/yankoff/ruby/pushdeploy
+read oldrev newrev refname
+
+unset GIT_DIR && cd $deploy_dir && git --work-tree=$deploy_dir pull ./ -f
+source "/Users/yankoff/.rvm/scripts/rvm"
+rvm ruby-1.9.2-p136
+$deploy_dir/config/auto_deploy.rb $oldrev $newrev $refname $deploy_dir
