@@ -7,7 +7,6 @@ class PushDeploy
       puts 'Running after_deploy...'
       
       @deploy_to, @oldrev, @newrev = args.shift, args.shift, args.shift || 'HEAD'          
-      puts "deploy !! #{@deploy_to}"
       if @oldrev == '0000000000000000000000000000000000000000'
         @oldrev = EMPTY_DIR
       elsif @oldrev.nil?
