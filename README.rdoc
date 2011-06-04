@@ -1,16 +1,16 @@
-Pushdeploy
-==========                                                                  
+=Pushdeploy
+
 Pushdeploy is a very simple replacement for capistrano to deploy your rails applications.
 It works just as on heroku - you just say 'git push' and everything is done. No 'cap deploy' and
 no additional release folders.
                                                        
-How it works
-------------
+==How it works
+
 * It installs a post-receive hook in your git repository which runs 'git pull' and then runs 'after_deploy.rb' script.
 * after_deploy.rb runs bundler, migrate, restarts passenger and launches all additional commands you may specify.
 
-Installation
-------------
+==Installation
+
 Install is very easy and consist of two steps.   
 Let's say you have two machines: 
 
@@ -19,16 +19,16 @@ Another one is a production machine where you push your commits and where is you
             
 * On your development machine. Inside of your project root folder:
 
-	gem install pushdeploy
-	pushdeploy_create_config
+   gem install pushdeploy
+   pushdeploy_create_config
 
 It will create auto_deploy.rb script in your 'config' folder. You can edit it to add any additional commands
 you want to launch on your production machine after 'git push'.
 
 * On your production machine. Inside of your project root folder:
 
-	gem install pushdeploy
-	pushdeploy_install_hook
+   gem install pushdeploy
+   pushdeploy_install_hook
 
 It will install a post-receive hook in your git repository. First it will try to determine the path to your repo and if it can't
 it will ask you some questions about your enironment. You can also launch in manual mode by using option '-m'.
@@ -36,6 +36,6 @@ it will ask you some questions about your enironment. You can also launch in man
 Note, that if you're using RVM you have to be in the gemset that is right for this current project. Or you have to run pushdeploy_install_hook 
 with the option '-m' and specify your gemset and ruby version manually.
 
-Credits
--------
+==Credits
+
 Inspired and watched into code of <a href='https://github.com/tpope/hookup'>hookup</a> and <a href='https://github.com/remi/pushand'>pushand</a>
