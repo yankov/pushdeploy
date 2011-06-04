@@ -5,8 +5,6 @@ class PushDeploy
     def initialize(args, &block)       
 
       puts 'Running after_deploy...'
-      puts "!!!"
-      puts args                                                           
       
       @deploy_to, @oldrev, @newrev = args.shift, args.shift, args.shift || 'HEAD'          
       puts "deploy !! #{@deploy_to}"
