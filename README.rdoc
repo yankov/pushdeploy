@@ -15,7 +15,7 @@ Install is very easy and consist of two steps.
 Let's say you have two machines: 
 
 One is a development machine where you do all the development and from which you do git commits and pushes. 
-Another one is a production machine where you push your commits and where is your webserver runs.
+Another one is a production machine where you push your commits and where your webserver is running.
             
 * On your development machine. Inside of your project root folder:
 
@@ -38,4 +38,4 @@ with the option '-m' and specify your gemset and ruby version manually.
 
 ==Credits
 
-Inspired and watched into code of <a href='https://github.com/tpope/hookup'>hookup</a> and <a href='https://github.com/remi/pushand'>pushand</a>
+Inspired and watched into code of https://github.com/tpope/hookup and https://github.com/remi/pushand
